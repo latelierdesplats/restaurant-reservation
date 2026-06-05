@@ -1,15 +1,37 @@
+const nodemailer = require("nodemailer");
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "GET, OPTIONS",
+};
+
+function createTransport() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
 exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: CORS_HEADERS, body: "" };
+  }
+
   const { action, token } = event.queryStringParameters || {};
 
   if (!action || !token || !["accepter", "refuser"].includes(action)) {
-    return { statusCode: 400, body: "Paramètres invalides." };
+    return { statusCode: 400, headers: CORS_HEADERS, body: "Paramètres invalides." };
   }
 
   let reservation;
   try {
     reservation = JSON.parse(Buffer.from(token, "base64").toString("utf-8"));
   } catch {
-    return { statusCode: 400, body: "Token invalide." };
+    return { statusCode: 400, headers: CORS_HEADERS, body: "Token invalide." };
   }
 
   const { prenom, nom, date, heure, couverts, emailClient } = reservation;
@@ -58,30 +80,17 @@ exports.handler = async (event) => {
     : `<strong>${prenom} ${nom}</strong> a été notifié que le créneau du <strong>${date} à ${heure}</strong> est indisponible.`;
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "api-key": process.env.BREVO_API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        sender: { name: "L'Atelier des Plats – Réservations", email: process.env.GMAIL_USER },
-        to: [{ email: emailClient }],
-        subject: estAccepte
-          ? `✅ Réservation confirmée – ${date} à ${heure}`
-          : `Réservation – Créneau indisponible`,
-        htmlContent: htmlClient
-      })
+    const transporter = createTransport();
+    await transporter.sendMail({
+      from: `"L'Atelier des Plats – Réservations" <${process.env.GMAIL_USER}>`,
+      to: emailClient,
+      subject: estAccepte ? `✅ Réservation confirmée – ${date} à ${heure}` : `Réservation – Créneau indisponible`,
+      html: htmlClient
     });
-
-    if (!response.ok) {
-      const txt = await response.text();
-      throw new Error(txt);
-    }
 
     return {
       statusCode: 200,
-      headers: { "Content-Type": "text/html; charset=utf-8" },
+      headers: { ...CORS_HEADERS, "Content-Type": "text/html; charset=utf-8" },
       body: `<!DOCTYPE html>
 <html lang="fr"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>${titre}</title>
@@ -98,6 +107,6 @@ p{color:#6b5344;line-height:1.6;font-size:1rem;}</style></head>
 </div></body></html>`
     };
   } catch (err) {
-    return { statusCode: 500, body: "Erreur lors de l'envoi du mail au client : " + err.message };
+    return { statusCode: 500, headers: CORS_HEADERS, body: "Erreur : " + err.message };
   }
 };
