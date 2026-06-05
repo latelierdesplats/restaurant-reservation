@@ -46,13 +46,13 @@ exports.handler = async (event) => {
     </div>
     <div style="padding:28px 32px;">
       <p style="font-size:1.1rem;color:#2c1810;">Bonjour <strong>${prenom}</strong>,</p>
-      <p style="color:#4a3728;line-height:1.6;">Nous avons le plaisir de confirmer votre réservation. Nous serons ravis de vous accueillir !</p>
+      <p style="color:#4a3728;line-height:1.6;">Nous avons le plaisir de confirmer votre réservation. Nous sommes impatients de vous accueillir !</p>
       <div style="background:#f5f0e8;border-left:3px solid #2e6b35;padding:16px 20px;margin:20px 0;">
         <p style="margin:4px 0;color:#2c1810;"><strong>📅 Date :</strong> ${date}</p>
         <p style="margin:4px 0;color:#2c1810;"><strong>🕐 Heure :</strong> ${heure}</p>
         <p style="margin:4px 0;color:#2c1810;"><strong>👥 Couverts :</strong> ${couverts}</p>
       </div>
-      <p style="color:#6b5344;font-style:italic;">En cas d'empêchement, merci de nous prévenir dès que possible.</p>
+      <p style="color:#6b5344;font-style:italic;">En cas d'empêchement, merci de nous prévenir dès que possible au 05.61.73.39.56.</p>
       <p style="color:#2c1810;margin-top:24px;">À très bientôt,<br><strong>L'Atelier des Plats</strong></p>
     </div>
   </div>
