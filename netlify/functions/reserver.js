@@ -1,15 +1,37 @@
+const nodemailer = require("nodemailer");
+
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "Content-Type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+};
+
+function createTransport() {
+  return nodemailer.createTransport({
+    service: "gmail",
+    auth: {
+      user: process.env.GMAIL_USER,
+      pass: process.env.GMAIL_APP_PASSWORD,
+    },
+  });
+}
+
 exports.handler = async (event) => {
+  if (event.httpMethod === "OPTIONS") {
+    return { statusCode: 204, headers: CORS_HEADERS, body: "" };
+  }
+
   if (event.httpMethod !== "POST") {
-    return { statusCode: 405, body: "Method Not Allowed" };
+    return { statusCode: 405, headers: CORS_HEADERS, body: "Method Not Allowed" };
   }
 
   let body;
   try { body = JSON.parse(event.body); }
-  catch { return { statusCode: 400, body: "Invalid JSON" }; }
+  catch { return { statusCode: 400, headers: CORS_HEADERS, body: "Invalid JSON" }; }
 
   const { prenom, nom, date, heure, couverts, tel, emailClient, message } = body;
   if (!prenom || !nom || !date || !heure || !couverts || !tel || !emailClient) {
-    return { statusCode: 400, body: JSON.stringify({ error: "Champs manquants" }) };
+    return { statusCode: 400, headers: CORS_HEADERS, body: JSON.stringify({ error: "Champs manquants" }) };
   }
 
   const reservation = { prenom, nom, date, heure, couverts, tel, emailClient, message: message || "—" };
@@ -45,33 +67,20 @@ exports.handler = async (event) => {
 </body></html>`;
 
   try {
-    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
-      method: "POST",
-      headers: {
-        "api-key": process.env.BREVO_API_KEY,
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        sender: { name: "L'Atelier des Plats – Réservations", email: process.env.GMAIL_USER },
-        to: [{ email: process.env.GMAIL_USER }],
-        subject: `🍽️ Nouvelle réservation – ${prenom} ${nom} – ${date} à ${heure}`,
-        htmlContent: htmlMail
-      })
+    const transporter = createTransport();
+    await transporter.sendMail({
+      from: `"L'Atelier des Plats – Réservations" <${process.env.GMAIL_USER}>`,
+      to: process.env.GMAIL_USER,
+      subject: `🍽️ Nouvelle réservation – ${prenom} ${nom} – ${date} à ${heure}`,
+      html: htmlMail
     });
-
-    if (!response.ok) {
-      const txt = await response.text();
-      console.error("Brevo error:", txt);
-      throw new Error(txt);
-    }
-
     return {
       statusCode: 200,
-      headers: { "Content-Type": "application/json" },
+      headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
       body: JSON.stringify({ success: true }),
     };
   } catch (err) {
     console.error("Erreur:", err);
-    return { statusCode: 500, body: JSON.stringify({ error: err.message }) };
+    return { statusCode: 500, headers: CORS_HEADERS, body: JSON.stringify({ error: err.message }) };
   }
 };
