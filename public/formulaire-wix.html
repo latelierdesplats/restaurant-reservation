@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Réservation</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;1,400&family=Crimson+Text:ital@0;1&family=IM+Fell+English+SC&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  :root { --cream:#f5f0e8; --parchment:#ede5d0; --bistrot-red:#8b1a1a; --bistrot-dark:#2c1810; --gold:#b8860b; --ink:#1a0f0a; --muted:#6b5344; }
+  body { background:var(--cream); font-family:'Crimson Text',Georgia,serif; color:var(--ink); min-height:100vh; display:flex; align-items:center; justify-content:center; padding:2rem 1rem; }
+  .card { background:var(--parchment); max-width:540px; width:100%; border:1px solid rgba(184,134,11,0.3); box-shadow:0 2px 4px rgba(44,24,16,0.08),0 8px 32px rgba(44,24,16,0.12); animation:fadeUp 0.6s ease both; }
+  @keyframes fadeUp { from{opacity:0;transform:translateY(20px)} to{opacity:1;transform:translateY(0)} }
+  .header { padding:2.2rem 2rem 1.4rem; text-align:center; border-bottom:1px solid rgba(184,134,11,0.2); }
+  .header-rule { display:flex; align-items:center; gap:0.7rem; margin-bottom:1rem; color:var(--gold); font-size:0.7rem; opacity:0.7; }
+  .header-rule::before,.header-rule::after { content:''; flex:1; height:1px; background:linear-gradient(to right,transparent,var(--gold),transparent); }
+  .title { font-family:'Playfair Display',serif; font-size:1.85rem; font-weight:600; color:var(--bistrot-dark); }
+  .subtitle { font-family:'IM Fell English SC',serif; font-size:0.72rem; color:var(--bistrot-red); letter-spacing:0.18em; margin-top:0.4rem; }
+  .body { padding:1.8rem 2rem 2rem; }
+  .row { display:grid; grid-template-columns:1fr 1fr; gap:1rem; }
+  .field { margin-bottom:1.1rem; }
+  .field.full { grid-column:1/-1; }
+  label { display:block; font-family:'IM Fell English SC',serif; font-size:0.68rem; letter-spacing:0.14em; color:var(--muted); margin-bottom:0.35rem; }
+  input,select,textarea { width:100%; background:rgba(255,255,255,0.55); border:1px solid rgba(184,134,11,0.25); border-bottom:1.5px solid rgba(139,26,26,0.25); padding:0.6rem 0.75rem; font-family:'Crimson Text',Georgia,serif; font-size:1rem; color:var(--ink); outline:none; transition:all 0.2s; -webkit-appearance:none; border-radius:1px; }
+  input:focus,select:focus,textarea:focus { border-color:rgba(139,26,26,0.5); border-bottom-color:var(--bistrot-red); background:rgba(255,255,255,0.8); }
+  select { cursor:pointer; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%238b1a1a'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 0.75rem center; padding-right:2rem; }
+  textarea { resize:vertical; min-height:72px; line-height:1.5; }
+  .divider { display:flex; align-items:center; gap:0.6rem; margin:0.4rem 0 1.2rem; color:var(--gold); font-size:0.65rem; opacity:0.45; }
+  .divider::before,.divider::after { content:''; flex:1; height:1px; background:var(--gold); opacity:0.4; }
+  .btn { width:100%; margin-top:0.5rem; padding:0.85rem 1.5rem; background:var(--bistrot-red); color:var(--cream); border:none; font-family:'IM Fell English SC',serif; font-size:0.85rem; letter-spacing:0.2em; cursor:pointer; transition:background 0.2s,transform 0.15s; box-shadow:0 2px 8px rgba(139,26,26,0.25); }
+  .btn:hover { background:#6e1414; transform:translateY(-1px); }
+  .btn:disabled { opacity:0.6; cursor:not-allowed; transform:none; }
+  .success { display:none; text-align:center; padding:3rem 2rem; animation:fadeUp 0.5s ease both; }
+  .success-icon { font-size:2.2rem; color:var(--gold); display:block; margin-bottom:0.8rem; }
+  .success-title { font-family:'Playfair Display',serif; font-size:1.4rem; color:var(--bistrot-dark); margin-bottom:0.6rem; }
+  .success-text { font-size:1.05rem; color:var(--muted); font-style:italic; line-height:1.6; }
+  .error-msg { display:none; background:rgba(139,26,26,0.08); border-left:2px solid var(--bistrot-red); padding:0.6rem 0.8rem; font-size:0.9rem; color:var(--bistrot-red); margin-top:0.8rem; font-style:italic; }
+  .note { text-align:center; font-size:0.82rem; color:var(--muted); font-style:italic; margin-top:1rem; opacity:0.7; }
+  @media (max-width:480px) { .row{grid-template-columns:1fr} .body{padding:1.4rem 1.2rem 1.6rem} .header{padding:1.6rem 1.2rem 1rem} }
+</style>
+</head>
+<body>
+<div class="card">
+  <div id="formView">
+    <div class="header">
+      <div class="header-rule">✦ ✦ ✦</div>
+      <h1 class="title">Réserver une table</h1>
+      <p class="subtitle">Nous serons ravis de vous accueillir</p>
+    </div>
+    <div class="body">
+      <div class="row">
+        <div class="field"><label>Prénom</label><input type="text" id="prenom" placeholder="Marie" required></div>
+        <div class="field"><label>Nom</label><input type="text" id="nom" placeholder="Dupont" required></div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Date</label><input type="date" id="date" required></div>
+        <div class="field"><label>Heure</label>
+          <select id="heure" required>
+            <option value="">— choisir —</option>
+            <optgroup label="Déjeuner"><option>12h00</option><option>12h30</option><option>13h00</option><option>13h30</option></optgroup>
+            <optgroup label="Dîner"><option>19h00</option><option>19h30</option><option>20h00</option><option>20h30</option><option>21h00</option><option>21h30</option></optgroup>
+          </select>
+        </div>
+      </div>
+      <div class="row">
+        <div class="field"><label>Nombre de couverts</label>
+          <select id="couverts" required>
+            <option value="">— choisir —</option>
+            <option>1 personne</option><option>2 personnes</option><option>3 personnes</option><option>4 personnes</option>
+            <option>5 personnes</option><option>6 personnes</option><option>7 personnes</option><option>8 personnes</option>
+            <option>Plus de 8 (nous contacter)</option>
+          </select>
+        </div>
+        <div class="field"><label>Téléphone</label><input type="tel" id="tel" placeholder="06 XX XX XX XX" required></div>
+      </div>
+      <div class="field full"><label>Email (pour recevoir la confirmation)</label><input type="email" id="emailClient" placeholder="marie.dupont@email.com" required></div>
+      <div class="divider">✦</div>
+      <div class="field full"><label>Message (optionnel)</label><textarea id="message" placeholder="Allergie, occasion spéciale, chaise bébé…"></textarea></div>
+      <button class="btn" id="submitBtn" onclick="envoyerReservation()">Envoyer la demande</button>
+      <div class="error-msg" id="errorMsg"></div>
+      <p class="note">Vous recevrez une confirmation par email dès validation par le restaurant.</p>
+    </div>
+  </div>
+  <div class="success" id="successView">
+    <span class="success-icon">✦</span>
+    <h2 class="success-title">Demande envoyée !</h2>
+    <p class="success-text">Le restaurant a bien reçu votre demande.<br>Vous recevrez un email de confirmation<br>dans les plus brefs délais.</p>
+  </div>
+</div>
+<script>
+  const NETLIFY_URL = "https://frolicking-llama-8a979a.netlify.app";
+  document.getElementById('date').min = new Date().toISOString().split('T')[0];
+
+  async function envoyerReservation() {
+    const prenom      = document.getElementById('prenom').value.trim();
+    const nom         = document.getElementById('nom').value.trim();
+    const date        = document.getElementById('date').value;
+    const heure       = document.getElementById('heure').value;
+    const couverts    = document.getElementById('couverts').value;
+    const tel         = document.getElementById('tel').value.trim();
+    const emailClient = document.getElementById('emailClient').value.trim();
+    const message     = document.getElementById('message').value.trim();
+    const errEl       = document.getElementById('errorMsg');
+    errEl.style.display = 'none';
+
+    if (!prenom || !nom || !date || !heure || !couverts || !tel || !emailClient) {
+      errEl.textContent = 'Merci de remplir tous les champs obligatoires.';
+      errEl.style.display = 'block';
+      return;
+    }
+
+    const dateObj = new Date(date + 'T12:00:00');
+    const dateFr  = dateObj.toLocaleDateString('fr-FR', { weekday:'long', day:'numeric', month:'long', year:'numeric' });
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.textContent = 'Envoi en cours…';
+
+    try {
+      const res = await fetch(`${NETLIFY_URL}/.netlify/functions/reserver`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ prenom, nom, date: dateFr, heure, couverts, tel, emailClient, message })
+      });
+      if (!res.ok) throw new Error('Erreur serveur');
+      document.getElementById('formView').style.display  = 'none';
+      document.getElementById('successView').style.display = 'block';
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Envoyer la demande';
+      errEl.textContent = 'Une erreur est survenue. Veuillez réessayer ou appeler directement le restaurant.';
+      errEl.style.display = 'block';
+    }
+  }
+</script>
+</body>
+</html>
