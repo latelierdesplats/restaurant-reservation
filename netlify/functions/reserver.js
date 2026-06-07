@@ -1,20 +1,8 @@
-const nodemailer = require("nodemailer");
-
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
-
-function createTransport() {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-}
 
 exports.handler = async (event) => {
   if (event.httpMethod === "OPTIONS") {
@@ -44,8 +32,9 @@ exports.handler = async (event) => {
 <html lang="fr"><head><meta charset="UTF-8"></head>
 <body style="margin:0;padding:0;background:#f5f0e8;font-family:Georgia,serif;">
   <div style="max-width:520px;margin:30px auto;background:#fff;border:1px solid #ddd;border-top:4px solid #8b1a1a;">
-    <div style="background:#8b1a1a;padding:24px 32px;text-align:center;">
-      <h1 style="margin:0;color:#f5f0e8;font-size:1.3rem;">Nouvelle Réservation</h1>
+    <div style="background:#1a1a1a;padding:24px 32px;text-align:center;">
+      <p style="margin:0 0 6px;font-size:10px;font-weight:300;letter-spacing:4px;color:#b5954a;text-transform:uppercase;">L'Atelier des Plats &nbsp;·&nbsp; Toulouse</p>
+      <h1 style="margin:0;font-family:Georgia,serif;font-size:22px;font-weight:300;color:#ffffff;">Nouvelle Réservation</h1>
     </div>
     <div style="padding:28px 32px;">
       <table style="width:100%;border-collapse:collapse;font-size:1rem;">
@@ -67,13 +56,25 @@ exports.handler = async (event) => {
 </body></html>`;
 
   try {
-    const transporter = createTransport();
-    await transporter.sendMail({
-      from: `"L'Atelier des Plats – Réservations" <${process.env.GMAIL_USER}>`,
-      to: process.env.GMAIL_USER,
-      subject: `🍽️ Nouvelle réservation – ${prenom} ${nom} – ${date} à ${heure}`,
-      html: htmlMail
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sender: { name: "L'Atelier des Plats – Réservations", email: process.env.GMAIL_USER },
+        to: [{ email: process.env.GMAIL_USER }],
+        subject: `🍽️ Nouvelle réservation – ${prenom} ${nom} – ${date} à ${heure}`,
+        htmlContent: htmlMail
+      })
     });
+
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(txt);
+    }
+
     return {
       statusCode: 200,
       headers: { ...CORS_HEADERS, "Content-Type": "application/json" },
