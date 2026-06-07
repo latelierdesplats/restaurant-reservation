@@ -1,20 +1,8 @@
-const nodemailer = require("nodemailer");
-
 const CORS_HEADERS = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "Content-Type",
   "Access-Control-Allow-Methods": "GET, OPTIONS",
 };
-
-function createTransport() {
-  return nodemailer.createTransport({
-    service: "gmail",
-    auth: {
-      user: process.env.GMAIL_USER,
-      pass: process.env.GMAIL_APP_PASSWORD,
-    },
-  });
-}
 
 function htmlConfirmation(prenom, date, heure, couverts) {
   return `<!DOCTYPE html>
@@ -109,22 +97,33 @@ exports.handler = async (event) => {
     ? htmlConfirmation(prenom, date, heure, couverts)
     : htmlRefus(prenom, date, heure);
 
-  const couleur = estAccepte ? "#2e6b35" : "#8b1a1a";
-  const titre   = estAccepte ? "Réservation acceptée ✓" : "Réservation refusée";
+  const couleur = estAccepte ? "#2e6b35" : "#7a1f1f";
+  const titre   = estAccepte ? "Réservation acceptée ✓" : "Réservation non confirmée";
   const texte   = estAccepte
     ? `<strong>${prenom} ${nom}</strong> a été notifié de la confirmation pour le <strong>${date} à ${heure}</strong>.`
     : `<strong>${prenom} ${nom}</strong> a été notifié que la demande pour le <strong>${date} à ${heure}</strong> n'a pas pu être acceptée.`;
 
   try {
-    const transporter = createTransport();
-    await transporter.sendMail({
-      from: `"L'Atelier des Plats" <${process.env.GMAIL_USER}>`,
-      to: emailClient,
-      subject: estAccepte
-        ? `Votre réservation est confirmée – ${date} à ${heure}`
-        : `❌ Réservation non confirmée – L'Atelier des Plats`,
-      html: htmlClient
+    const response = await fetch("https://api.brevo.com/v3/smtp/email", {
+      method: "POST",
+      headers: {
+        "api-key": process.env.BREVO_API_KEY,
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({
+        sender: { name: "L'Atelier des Plats", email: process.env.GMAIL_USER },
+        to: [{ email: emailClient }],
+        subject: estAccepte
+          ? `✅ Votre réservation est confirmée – ${date} à ${heure}`
+          : `❌ Réservation non confirmée – L'Atelier des Plats`,
+        htmlContent: htmlClient
+      })
     });
+
+    if (!response.ok) {
+      const txt = await response.text();
+      throw new Error(txt);
+    }
 
     return {
       statusCode: 200,
@@ -137,7 +136,7 @@ exports.handler = async (event) => {
   .card{background:#fff;max-width:420px;width:90%;text-align:center;border:1px solid #e0dbd4;overflow:hidden;}
   .top{background:#1a1a1a;padding:32px;}
   .icon{width:56px;height:56px;border-radius:50%;background:${couleur};color:#fff;font-size:1.5rem;display:flex;align-items:center;justify-content:center;margin:0 auto 16px;}
-  h1{margin:0;font-family:'Cormorant Garamond',Georgia,serif;font-size:22px;font-weight:300;color:#fff;}
+  h1{margin:0;font-family:Georgia,serif;font-size:22px;font-weight:300;color:#fff;}
   .body{padding:32px;}
   p{font-size:13px;font-weight:300;color:#555;line-height:1.8;margin:0;}
   .small{font-size:11px;color:#aaa;margin-top:16px;font-style:italic;}
